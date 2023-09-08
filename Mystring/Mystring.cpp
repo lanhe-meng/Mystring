@@ -111,10 +111,14 @@ bool operator<(const Mystring& m_str1, const Mystring& m_str2)
 	size_t min = m_str1.sz < m_str2.sz ? m_str1.sz : m_str2.sz;
 	size_t i = 0;
 	for (; i < min; ++i) {
-		if (m_str1[i] > m_str2[i])return false;
+		if (m_str1[i] == m_str2[i])continue;
+		else {
+			if (m_str1[i] > m_str2[i])return false;
+			return true;
+		}
 	}
-	if (m_str1.sz >= m_str2.sz)return false;
-	return true;
+	if (m_str1.sz < m_str2.sz)return true;
+	return false;
 }
 bool operator>(const Mystring& m_str1, const Mystring& m_str2)
 {
@@ -151,6 +155,7 @@ char* Mystring::c_str(char* s, size_t len)
 {
 	if (len <= sz)return nullptr;
 	for (size_t i = 0; i < sz; ++i)s[i] = (*this)[i];
+	s[sz] = 0;
 	return s;
 }
 
@@ -225,7 +230,7 @@ Mystring& Mystring::replace(size_t beg, size_t len, const Mystring& mstr)
 	return *this;
 }
 
-int Mystring::compare(const Mystring& mstr1, const Mystring& mstr2)
+int compare(const Mystring& mstr1, const Mystring& mstr2)
 {
 	if (mstr1 < mstr2)return -1;
 	if (mstr1 == mstr2)return 0;

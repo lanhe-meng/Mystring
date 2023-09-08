@@ -51,6 +51,7 @@ class Mystring {
 	friend bool operator>(const Mystring&, const Mystring&);
 	friend std::ostream& operator<<(std::ostream&, const Mystring&);
 	friend std::istream& operator>>(std::istream&, Mystring&);
+	friend int compare(const Mystring&, const Mystring&);
 public:
 	Mystring();
 	Mystring(const char*);
@@ -71,7 +72,6 @@ public:
 	Mystring& insert(size_t beg,const Mystring&);
 	Mystring& erase(size_t beg, size_t len);
 	Mystring& replace(size_t beg, size_t len, const Mystring&);
-	int compare(const Mystring&, const Mystring&);
 private:
 	Memorypool::element* mystr_head,* mystr_tail;
 	size_t sz;
@@ -86,4 +86,5 @@ bool operator<(const Mystring&, const Mystring&);
 bool operator>(const Mystring&, const Mystring&);
 std::ostream& operator<<(std::ostream&,const Mystring&);
 std::istream& operator>>(std::istream&, Mystring&);
+int compare(const Mystring&, const Mystring&);
 #endif

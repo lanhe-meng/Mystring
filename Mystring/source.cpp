@@ -5,6 +5,8 @@ int main(void)
 {
 	Mystring mmstr("12345678912345678912345678912345678912345678912345678912345678900"); 
 	Mystring mmmstr(mmstr);
-	cout << mmmstr.replace(1,5, "123");
+	Mystring s1("abc");
+	Mystring s2("abb");
+	cout << compare(s1, s1) << endl;
 	return 0;
 }
