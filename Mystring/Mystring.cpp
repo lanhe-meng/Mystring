@@ -32,10 +32,7 @@ Mystring::Mystring(const char* str) :mystr_head(nullptr), mystr_tail(nullptr), s
 		apply_free(ch, 64);
 	}
 }
-Mystring::Mystring()
-{
-	Mystring("");
-}
+Mystring::Mystring():Mystring(""){}
 Mystring::~Mystring()
 {
 	this->release();
@@ -49,7 +46,7 @@ Mystring::Mystring(const Mystring& m_str):mystr_head(nullptr),mystr_tail(nullptr
 	}
 
 }
-Mystring::Mystring(Mystring&& m_str)
+Mystring::Mystring(Mystring&& m_str) noexcept
 {
 	const Memorypool::element* pele = m_str.mystr_head;
 	while (pele) {
@@ -69,10 +66,170 @@ char& Mystring::operator[] (size_t num)  const
 	}
 	return *(now->ele_str + num);
 }
+Mystring& Mystring::operator=(const Mystring& mstr)
+{
+	this->release();
+	Memorypool::element* now = mstr.mystr_head;
+	while (now) {
+		this->apply_free(*now);
+		now = now->next;
+	}
+	return *this;
+}
+Mystring& Mystring::operator=(Mystring&& mstr) noexcept
+{
+	this->release();
+	Memorypool::element* now = mstr.mystr_head;
+	while (now) {
+		this->apply_free(*now);
+		now = now->next;
+	}
+	return *this;
+}
+
+Mystring& Mystring::operator+=(const Mystring& mstr)
+{
+	return *this = *this + mstr;
+}
+
+
 bool operator==(const Mystring& m_str1, const  Mystring& m_str2)
 {
 	if (m_str1.sz != m_str2.sz)return false;
+	size_t i = 0;
+	for (; i < m_str1.sz; ++i) {
+		if (m_str1[i] != m_str2[i])return false;
+	}
+	return true;
+}
+bool operator!=(const Mystring& m_str1, const Mystring& m_str2)
+{
+	return !(m_str1 == m_str2);
+}
+bool operator<(const Mystring& m_str1, const Mystring& m_str2)
+{
+	size_t min = m_str1.sz < m_str2.sz ? m_str1.sz : m_str2.sz;
+	size_t i = 0;
+	for (; i < min; ++i) {
+		if (m_str1[i] > m_str2[i])return false;
+	}
+	if (m_str1.sz >= m_str2.sz)return false;
+	return true;
+}
+bool operator>(const Mystring& m_str1, const Mystring& m_str2)
+{
+	if (m_str1 == m_str2 || m_str1 < m_str2)return false;
+	return true;
+}
 
+std::ostream& operator<<(std::ostream& out, const Mystring& mstr)
+{
+	for (size_t i = 0; i < mstr.sz; ++i)out << mstr[i];
+	return out;
+}
+
+std::istream& operator>>(std::istream& in, Mystring& mstr)
+{
+	mstr.release();
+	char s[Memorypool::piece_size + 1]{};
+	char ch = 0;
+	size_t i = 0;
+	while (in.get(ch) && ch != '\n') {
+		if (i > Memorypool::piece_size - 1) {
+			mstr.apply_free(s, Memorypool::piece_size);
+			i = 0;
+		}
+		s[i] = ch;
+		++i;
+	}
+	if (!i)return in;
+	mstr.apply_free(s, i);
+	return in;
+}
+
+char* Mystring::c_str(char* s, size_t len)
+{
+	if (len <= sz)return nullptr;
+	for (size_t i = 0; i < sz; ++i)s[i] = (*this)[i];
+	return s;
+}
+
+Mystring Mystring::substr(size_t beg, size_t len)
+{
+	Mystring tmp;
+	size_t end = beg + len;
+	char ch[2]{};
+	for (size_t i = beg; i < end; ++i) {
+		*ch = (*this)[i];
+		tmp += ch;
+	}
+	return tmp;
+}
+
+Mystring& Mystring::append(const char* s)
+{
+	return *this += s;
+}
+
+
+Mystring& Mystring::insert(size_t beg, const Mystring& mstr)
+{
+	Mystring tmp;
+	char ch[2]{};
+	for (size_t i = beg; i < sz; ++i) {
+		*ch = (*this)[i];
+		tmp += ch;
+	}
+	this->erase(beg, sz - beg);
+	*this += mstr;
+	*this += tmp;
+	return *this;
+}
+
+Mystring& Mystring::erase(size_t beg, size_t len)
+{
+	if (!len)return *this;
+	Mystring tmp;
+	char ch[2]{};
+	for (size_t i = beg + len; i < sz; ++i) {
+		*ch = (*this)[i];
+		tmp += ch;
+	}
+	for (size_t i = 0,j = beg; i < tmp.sz; ++i,++j) {
+		(*this)[j] = tmp[i];
+	}
+	if (this->mystr_tail->used_byte > len)this->mystr_tail->used_byte -= len;
+	else if (this->mystr_tail->used_byte == len) {
+		Memorypool::element* tmp = mystr_tail;
+		mystr_tail = mystr_tail->pre;
+		_source_pool.used2free(tmp);
+	}
+	else {
+		size_t tlen = len;
+		while (this->mystr_tail->used_byte < tlen) {
+			tlen -= this->mystr_tail->used_byte;
+			Memorypool::element* tmp = mystr_tail;
+			mystr_tail = mystr_tail->pre;
+			_source_pool.used2free(tmp);
+		}
+		this->mystr_tail->used_byte -= tlen;;
+	}
+	sz -= len;
+	return *this;
+}
+
+Mystring& Mystring::replace(size_t beg, size_t len, const Mystring& mstr)
+{
+	this->erase(beg, len);
+	this->insert(beg, mstr);
+	return *this;
+}
+
+int Mystring::compare(const Mystring& mstr1, const Mystring& mstr2)
+{
+	if (mstr1 < mstr2)return -1;
+	if (mstr1 == mstr2)return 0;
+	return 1;
 }
 
 //申请空闲块（保证成功），拷贝字符串，维护Mystring结构和改变sz
@@ -152,23 +309,28 @@ void Mystring::release()
 }
 void Memorypool::used2free(element* ele_str)
 {
+	if (!ele_str)return;
 	ele_str->used_byte = 0;
+	if (ele_str->next) ele_str->next->pre = ele_str->pre;
+	if (ele_str->pre)ele_str->pre->next = ele_str->next;
 	ele_str->pre = nullptr;
 	ele_str->next = free_head;
+	free_head->pre = ele_str;
 	free_head = ele_str;
-	ele_str->next->pre = ele_str;
 }
 
 Mystring operator+(const Mystring& m_str1, const Mystring& m_str2)
 {
 	Mystring m_str(m_str1);
-	Memorypool::element* tail = m_str.mystr_tail;
-	for (size_t i = tail->used_byte, j = 0, max = m_str2.sz; j < max; ++i, ++j) {
+	if (!m_str.mystr_head)m_str.apply_free("", 0);
+	for (size_t i = m_str.mystr_tail->used_byte, j = 0, max = m_str2.sz; j < max; ++i, ++j) {
 		if (i > 63) {
 			i %= 64;
 			m_str.apply_free("", 0);
 		}
-		*(tail->ele_str + i) = m_str2[j];
+		*(m_str.mystr_tail->ele_str + i) = m_str2[j];
+		++m_str.mystr_tail->used_byte;
+		++m_str.sz;
 	}
 	return m_str;
 }

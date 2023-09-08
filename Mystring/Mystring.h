@@ -8,6 +8,7 @@ class Mystring;
 class Memorypool {
 	friend class Mystring;
 	friend Mystring operator+(const Mystring&,const Mystring&);
+	friend std::istream& operator>>(std::istream& in, Mystring& mstr);
 private:
 	enum { piece_size = 64,init_size = 100 };
 	struct element {
@@ -45,13 +46,32 @@ class Mystring {
 	friend class Memorypool;
 	friend Mystring operator+(const Mystring&, const Mystring&);
 	friend bool operator==(const Mystring&, const  Mystring&);
+	friend bool operator!=(const Mystring&, const Mystring&);
+	friend bool operator<(const Mystring&, const Mystring&);
+	friend bool operator>(const Mystring&, const Mystring&);
+	friend std::ostream& operator<<(std::ostream&, const Mystring&);
+	friend std::istream& operator>>(std::istream&, Mystring&);
 public:
 	Mystring();
 	Mystring(const char*);
 	Mystring(const Mystring&);
-	Mystring(Mystring&&);
+	Mystring(Mystring&&)noexcept;
 	~Mystring();
 	char& operator[](size_t) const;
+	Mystring& operator=(const Mystring&);
+	Mystring& operator=(Mystring&&)noexcept;
+	Mystring& operator+=(const Mystring&);
+	size_t length() { return this->sz; }
+	size_t size() { return this->sz; }
+	bool empty() { return sz > 0 ? true : false; }
+	void clear() { this->release(); }
+	char* c_str(char*, size_t len);
+	Mystring substr(size_t beg, size_t len);
+	Mystring& append(const char*);
+	Mystring& insert(size_t beg,const Mystring&);
+	Mystring& erase(size_t beg, size_t len);
+	Mystring& replace(size_t beg, size_t len, const Mystring&);
+	int compare(const Mystring&, const Mystring&);
 private:
 	Memorypool::element* mystr_head,* mystr_tail;
 	size_t sz;
@@ -61,4 +81,9 @@ private:
 };
 Mystring operator+(const Mystring&,const  Mystring&);
 bool operator==(const Mystring&, const  Mystring&);
+bool operator!=(const Mystring&, const Mystring&);
+bool operator<(const Mystring&, const Mystring&);
+bool operator>(const Mystring&, const Mystring&);
+std::ostream& operator<<(std::ostream&,const Mystring&);
+std::istream& operator>>(std::istream&, Mystring&);
 #endif
